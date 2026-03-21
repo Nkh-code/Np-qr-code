@@ -1,2 +1,2 @@
-# Np-qr-code
+# Npqrcode
 Qr code Générateur de codes
