@@ -1,2 +1,2 @@
 # Npqrcode
-Qr code Générateur de codes
+Générateur de codes et d’étiquettes
