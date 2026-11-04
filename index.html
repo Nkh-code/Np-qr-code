@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Np-qr-code — Générateur Points & Étoile</title>
+    <title>Npqrcode — Générateur d'étiquettes logistiques</title>
     <script src="https://cdn.jsdelivr.net/npm/bwip-js@3.0.4/dist/bwip-js-min.js"></script>
     <style>
         :root {
@@ -15,11 +15,13 @@
             --text: #0f172a;
             --text-secondary: #475569;
             --text-muted: #94a3b8;
+            --primary: #0f172a;
             --accent: #2563eb;
             --accent-light: #eff6ff;
             --accent-border: #bfdbfe;
             --success: #10b981;
             --success-light: #ecfdf5;
+            --success-border: #a7f3d0;
             --warning: #f59e0b;
             --warning-light: #fffbeb;
             --warning-border: #fde68a;
@@ -27,6 +29,7 @@
             --input-border: #cbd5e1;
             --input-focus: #2563eb;
             --nav-bg: #e2e8f0;
+            --nav-item-active: #ffffff;
             --grid-dots: radial-gradient(#cbd5e1 1px, transparent 1px);
             --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
             --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
@@ -47,11 +50,13 @@
             --text: #fafafa;
             --text-secondary: #a1a1aa;
             --text-muted: #71717a;
+            --primary: #ffffff;
             --accent: #3b82f6;
             --accent-light: #172554;
             --accent-border: #1e40af;
             --success: #10b981;
             --success-light: #064e3b;
+            --success-border: #065f46;
             --warning: #f59e0b;
             --warning-light: #451a03;
             --warning-border: #78350f;
@@ -59,6 +64,7 @@
             --input-border: #3f3f46;
             --input-focus: #3b82f6;
             --nav-bg: #27272a;
+            --nav-item-active: #141417;
             --grid-dots: radial-gradient(#27272a 1px, transparent 1px);
             --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
             --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
@@ -83,7 +89,7 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Header */
+        /* Top Navigation Header */
         header.app-header {
             width: 100%;
             background: var(--surface);
@@ -96,7 +102,7 @@
         }
 
         .header-content {
-            max-width: 1200px;
+            max-width: 1380px;
             margin: 0 auto;
             padding: 12px 24px;
             display: flex;
@@ -112,14 +118,16 @@
         }
 
         .brand-logo {
-            width: 38px;
-            height: 38px;
+            width: 36px;
+            height: 36px;
             background: linear-gradient(135deg, #2563eb, #1d4ed8);
             border-radius: var(--radius-sm);
             display: flex;
             align-items: center;
             justify-content: center;
             color: #ffffff;
+            font-weight: 900;
+            font-size: 16px;
             box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
         }
 
@@ -162,7 +170,7 @@
             gap: 10px;
         }
 
-        /* Status pill */
+        /* Status Badge */
         .status-pill {
             display: flex;
             align-items: center;
@@ -174,6 +182,7 @@
             font-size: 12px;
             font-weight: 600;
             color: var(--text-secondary);
+            transition: all 0.2s ease;
         }
 
         .status-dot {
@@ -238,11 +247,71 @@
             transform: translateY(-1px);
         }
 
+        /* Nav Tabs Bar */
+        .tabs-bar {
+            width: 100%;
+            background: var(--surface);
+            border-bottom: 1px solid var(--card-border);
+            padding: 6px 24px;
+        }
+
+        .tabs-container {
+            max-width: 1380px;
+            margin: 0 auto;
+            display: flex;
+            background: var(--nav-bg);
+            padding: 4px;
+            border-radius: var(--radius-md);
+            gap: 4px;
+            overflow-x: auto;
+        }
+
+        .nav-item {
+            flex: 1;
+            min-width: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .nav-item svg {
+            width: 16px;
+            height: 16px;
+            stroke-width: 2;
+            transition: transform 0.2s ease;
+        }
+
+        .nav-item:hover {
+            color: var(--text);
+        }
+
+        .nav-item.active {
+            background: var(--nav-item-active);
+            color: var(--text);
+            box-shadow: var(--shadow-sm);
+            font-weight: 700;
+        }
+
+        .nav-item.active svg {
+            color: var(--accent);
+            transform: scale(1.05);
+        }
+
         /* Main Workspace Layout (2 columns on desktop) */
         main.main-layout {
-            max-width: 1200px;
+            max-width: 1380px;
             width: 100%;
-            margin: 28px auto;
+            margin: 24px auto;
             padding: 0 24px 60px;
             display: grid;
             grid-template-columns: minmax(360px, 440px) 1fr;
@@ -250,7 +319,7 @@
             align-items: start;
         }
 
-        /* Config Card */
+        /* Left Config Panel */
         .config-card {
             background: var(--card);
             border: 1px solid var(--card-border);
@@ -275,7 +344,7 @@
             color: var(--text);
         }
 
-        /* Mode Switcher */
+        /* Submode Switcher (Unique vs Masse) */
         .mode-selector {
             display: flex;
             background: var(--nav-bg);
@@ -307,13 +376,72 @@
             box-shadow: var(--shadow-sm);
         }
 
-        .field {
+        /* Area Selector Grid */
+        .area-section {
             display: flex;
             flex-direction: column;
             gap: 8px;
         }
 
-        label {
+        .section-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .area-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .area-btn {
+            background: var(--surface-hover);
+            border: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            padding: 10px 4px;
+            border-radius: var(--radius-sm);
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+
+        .area-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--card);
+            transform: translateY(-1px);
+        }
+
+        .area-btn.active {
+            background: var(--accent);
+            color: #ffffff;
+            border-color: var(--accent);
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+        }
+
+        /* Form Inputs */
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field label {
             font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
@@ -321,38 +449,32 @@
             color: var(--text-muted);
         }
 
-        input, textarea {
-            padding: 14px 16px;
+        .field input {
+            padding: 12px 14px;
             background: var(--input-bg);
             border: 1.5px solid var(--input-border);
             border-radius: var(--radius-sm);
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             color: var(--text);
             width: 100%;
-            outline: none;
             transition: all 0.2s ease;
             font-family: var(--font-mono), sans-serif;
         }
 
-        textarea {
-            resize: vertical;
-            min-height: 100px;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        input:focus, textarea:focus {
+        .field input:focus {
+            outline: none;
             border-color: var(--input-focus);
             background: var(--card);
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
         }
 
-        /* Actions */
+        /* Actions & Print Button */
         .actions-section {
             display: flex;
             flex-direction: column;
             gap: 12px;
+            margin-top: 6px;
         }
 
         .btn-print {
@@ -402,11 +524,16 @@
             font-weight: 500;
         }
 
+        .print-hint b {
+            font-weight: 700;
+        }
+
         .mode-info {
             text-align: center;
             font-size: 12px;
             color: var(--text-muted);
             font-weight: 500;
+            padding: 4px 0;
         }
 
         .btn-reset {
@@ -442,7 +569,7 @@
             display: flex;
             flex-direction: column;
             position: sticky;
-            top: 90px;
+            top: 130px;
         }
 
         .studio-header {
@@ -507,9 +634,10 @@
             border-color: var(--accent);
         }
 
+        /* Studio Canvas */
         .studio-canvas {
-            min-height: 440px;
-            max-height: 680px;
+            min-height: 480px;
+            max-height: 720px;
             overflow-y: auto;
             padding: 30px;
             background-color: var(--bg);
@@ -521,6 +649,7 @@
             justify-content: flex-start;
         }
 
+        /* Empty state */
         .empty-preview-state {
             display: flex;
             flex-direction: column;
@@ -528,7 +657,7 @@
             justify-content: center;
             text-align: center;
             margin: auto;
-            max-width: 300px;
+            max-width: 320px;
             color: var(--text-muted);
             gap: 12px;
             padding: 40px 0;
@@ -538,6 +667,7 @@
             width: 48px;
             height: 48px;
             stroke-width: 1.5;
+            color: var(--text-muted);
             opacity: 0.6;
         }
 
@@ -546,6 +676,7 @@
             line-height: 1.5;
         }
 
+        /* Print zone container with zoom modes */
         #print-zone {
             display: flex;
             flex-wrap: wrap;
@@ -553,10 +684,10 @@
             justify-content: center;
             align-items: flex-start;
             width: 100%;
+            transition: transform 0.2s ease;
         }
 
-        /* --- ÉTIQUETTE 1.5x1in (38.1 x 25.4 mm) --- */
-        /* CORRECTION MAJEURE : gap minimal (2px) pour que les chiffres soient bien proches du Data Matrix */
+        /* Label Real Dimensions (1.5in x 1in = 38.1mm x 25.4mm) */
         .label-style {
             display: flex;
             width: 1.5in;
@@ -566,8 +697,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            gap: 2px; /* Espacement réduit et harmonieux */
-            padding: 0;
+            position: relative;
             color: #000000 !important;
             box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
             border-radius: 4px;
@@ -586,34 +716,27 @@
         .zoom-15 .label-style { transform: scale(1.4); margin: 18px 12px; }
         .zoom-2 .label-style { transform: scale(1.8); margin: 34px 22px; }
 
-        .barcode-box {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            line-height: 0;
-        }
+        /* Styles spécifiques aux étiquettes (1.5 x 1 in) */
+        .emp-top-row { display: flex; width: 100%; align-items: center; justify-content: space-between; padding: 2px 10px 0; box-sizing: border-box; }
+        .area-block { display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; min-width: 55px; }
+        .area-title { font-size: 8pt; font-weight: 900; letter-spacing: 1px; color: #000; text-transform: uppercase; }
+        .area-num { font-size: 20pt; font-weight: 900; color: #000; line-height: 1; margin-top: 2px; }
+        .dm-box { display: flex; align-items: center; justify-content: center; }
+        .dm-box img { max-height: 0.54in; max-width: 0.54in; image-rendering: pixelated; }
+        .emp-bottom-text { font-size: 13.5pt; font-weight: 900; color: #000; letter-spacing: 0.8px; text-align: center; width: 100%; line-height: 1; margin-bottom: 4px; white-space: nowrap; font-family: -apple-system, Arial, sans-serif; }
 
-        .barcode-box img {
-            max-height: 0.60in;
-            max-width: 0.60in;
-            display: block;
-            image-rendering: pixelated;
-        }
+        .allee-header { font-size: 8.5pt; font-weight: 800; color: #000; letter-spacing: 0.5px; text-align: center; text-transform: uppercase; line-height: 1; margin-top: 2px; }
+        .allee-dir { font-size: 15pt; font-weight: 900; color: #000; letter-spacing: 1.5px; text-align: center; line-height: 1; margin: 3px 0 2px; }
+        .tall-barcode { width: 100%; display: flex; justify-content: center; align-items: center; }
+        .tall-barcode img { max-height: 0.48in; max-width: 96%; image-rendering: pixelated; }
 
-        /* Chiffres collés au code, nets et parfaitement proportionnés */
-        .res-text {
-            font-weight: 800;
-            font-size: 8pt;
-            letter-spacing: 0.5px;
-            font-family: var(--font-mono), monospace;
-            color: #000000 !important;
-            line-height: 1;
-            margin: 0;
-            padding: 0;
-            text-align: center;
-        }
+        .txt-row1 { font-size: 9pt; font-weight: bold; margin-bottom: 1px; color: #000 !important; font-family: Arial, sans-serif; }
+        .txt-row2 { font-size: 11pt; font-weight: bold; color: #000 !important; margin-bottom: 3px; font-family: Arial, sans-serif; }
+        .barcode-box { width: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        .res-text { font-weight: 800; font-size: 8pt; margin-top: 3px; letter-spacing: 0.5px; font-family: var(--font-mono); color: #000 !important; }
+        .barcode-box img { max-height: 0.55in; max-width: 92%; image-rendering: pixelated; }
 
-        /* Toast */
+        /* Toast notification */
         .toast-msg {
             position: fixed;
             bottom: 24px;
@@ -641,7 +764,8 @@
             opacity: 1;
         }
 
-        @media (max-width: 900px) {
+        /* Responsive Breakpoints */
+        @media (max-width: 960px) {
             main.main-layout {
                 grid-template-columns: 1fr;
                 gap: 20px;
@@ -649,6 +773,24 @@
             }
             .studio-card {
                 position: static;
+            }
+            .studio-canvas {
+                min-height: 360px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .header-content {
+                padding: 10px 14px;
+            }
+            .tabs-bar {
+                padding: 6px 14px;
+            }
+            .grid-inputs {
+                grid-template-columns: 1fr;
+            }
+            .brand-subtitle {
+                display: none;
             }
         }
     </style>
@@ -660,27 +802,33 @@
         <div class="header-content">
             <div class="brand-zone">
                 <div class="brand-logo">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
                     </svg>
                 </div>
                 <div class="brand-title">
-                    <h1>Np-qr-code</h1>
-                    <span class="brand-subtitle">Points & Étoile <span class="brand-tag">38 × 25 mm</span></span>
+                    <h1>Npqrcode</h1>
+                    <span class="brand-subtitle">Zebra LP 2824 Plus <span class="brand-tag">38 × 25 mm</span></span>
                 </div>
             </div>
 
             <div class="header-actions">
+                <!-- Status pill -->
                 <div class="status-pill" id="printerStatusPill" title="Statut de connexion">
                     <span class="status-dot" id="statusDot"></span>
                     <span id="printerStatusText">Détection imprimante…</span>
                 </div>
 
+                <!-- WebUSB connect button (Chrome only) -->
                 <button id="btnConnectUsb" class="btn-header-action" onclick="connectUsbPrinter()" style="display:none;" title="Connexion directe par câble USB">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
                     <span>Connecter USB</span>
                 </button>
 
+                <!-- Dark mode toggle -->
                 <button class="theme-btn" onclick="toggleDarkMode()" title="Changer le thème">
                     <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
@@ -690,35 +838,58 @@
         </div>
     </header>
 
-    <!-- Main Workspace -->
+    <!-- Navigation Tabs Bar -->
+    <nav class="tabs-bar">
+        <div class="tabs-container">
+            <div id="btn-emp" class="nav-item active" onclick="switchTab('emplacement', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg>
+                <span>Emplacement</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('allee', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="17 11 12 6 7 11"></polyline><polyline points="17 18 12 13 7 18"></polyline></svg>
+                <span>Allée</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('badge', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <span>Badge</span>
+            </div>
+            <div id="btn-etoile" class="nav-item" onclick="switchTab('etoile', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                <span>Étoile</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Workspace (2 columns) -->
     <main class="main-layout">
-        <!-- Configuration Card -->
+        <!-- Left: Configuration Form -->
         <section class="config-card">
             <div class="card-header-row">
-                <h2>Générateur Points</h2>
-                <div class="mode-selector">
-                    <button class="mode-btn active" id="mode-single" onclick="setMode('single')">
+                <h2 id="tab-title">Emplacement</h2>
+                <!-- Submode switcher (Unique / Masse) -->
+                <div class="mode-selector" id="mode-ui">
+                    <button class="mode-btn active" id="mode-single" onclick="setSubMode('single')">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="4" width="16" height="16" rx="2"></rect></svg>
                         <span>Unique</span>
                     </button>
-                    <button class="mode-btn" id="mode-mass" onclick="setMode('mass')">
+                    <button class="mode-btn" id="mode-mass" onclick="setSubMode('mass')">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="16" height="14" rx="2"></rect><path d="M6 3h14a2 2 0 0 1 2 2v12"></path></svg>
                         <span>Masse</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Single Input Mode -->
-            <div id="singleZone" class="field">
-                <label for="inputData">Numéro ou texte à encoder (Points)</label>
-                <input type="text" id="inputData" placeholder="ex: 5522051" onkeyup="update()" oninput="update()">
+            <!-- Area Grid -->
+            <div id="area-selection-zone" class="area-section" style="display:none;">
+                <div class="section-label">
+                    <span>Sélectionner la Zone (Area)</span>
+                    <span id="selectedAreaBadge" style="color:var(--accent); font-weight:700;">Aucune</span>
+                </div>
+                <div class="area-grid" id="area-grid-btns"></div>
             </div>
 
-            <!-- Mass Input Mode -->
-            <div id="massZone" class="field" style="display:none;">
-                <label for="inputDataMass">Liste de codes (un par ligne ou séparés par virgule)</label>
-                <textarea id="inputDataMass" placeholder="5522051&#10;5522052&#10;5522053" onkeyup="updateMass()" oninput="updateMass()"></textarea>
-            </div>
+            <!-- Dynamic Form Container -->
+            <div id="form-container"></div>
 
             <!-- Actions -->
             <div class="actions-section">
@@ -740,7 +911,7 @@
             </div>
         </section>
 
-        <!-- Live Studio Preview -->
+        <!-- Right: Studio Live Preview -->
         <section class="studio-card">
             <div class="studio-header">
                 <div class="studio-title-box">
@@ -757,19 +928,47 @@
 
             <div class="studio-canvas zoom-1" id="studioCanvas">
                 <div id="emptyPreview" class="empty-preview-state">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                    <p>Saisissez un numéro pour générer instantanément l'étiquette avec code Data Matrix centré et chiffres rapprochés.</p>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="7" y1="8" x2="17" y2="8"></line><line x1="7" y1="12" x2="17" y2="12"></line><line x1="7" y1="16" x2="11" y2="16"></line></svg>
+                    <p>Complétez les champs du formulaire pour générer automatiquement l'aperçu de l'étiquette.</p>
                 </div>
                 <div id="print-zone"></div>
             </div>
         </section>
     </main>
 
+    <!-- Floating Toast Notification -->
     <div id="toast" class="toast-msg"></div>
 
     <script>
-        let currentMode = 'single';
+        let currentTab = '';
+        let subMode = 'single';
+        let selectedArea = null;
         let labelsToPrint = [];
+        const areaList = [1, 2, 3, 4, 5, 10, 11, 12, 13, 21, 22, 23];
+
+        const forms = {
+            emplacement: {
+                single: `<div class="grid-inputs">
+                            <div class="field"><label>Allée</label><input type="number" id="a" placeholder="ex: 12"></div>
+                            <div class="field"><label>Étagère</label><input type="text" id="etg" maxlength="1" style="text-transform:uppercase;" placeholder="ex: A"></div>
+                            <div class="field"><label>Étage</label><input type="number" id="niv" placeholder="ex: 1"></div>
+                            <div class="field"><label>Place</label><input type="text" id="pl" maxlength="1" style="text-transform:uppercase;" placeholder="ex: B"></div>
+                         </div>`,
+                mass: `<div class="grid-inputs">
+                            <div class="field" style="grid-column: 1 / -1;"><label>Allée</label><input type="number" id="a" placeholder="ex: 12"></div>
+                            <div class="field"><label>Étagère de</label><input type="text" id="etg_start" maxlength="1" style="text-transform:uppercase;" placeholder="A"></div>
+                            <div class="field"><label>à</label><input type="text" id="etg_end" maxlength="1" style="text-transform:uppercase;" placeholder="D"></div>
+                            <div class="field"><label>Nb Étages</label><input type="number" id="niv_max" placeholder="ex: 3"></div>
+                            <div class="field"><label>Place de A à...</label><input type="text" id="pl_end" maxlength="1" style="text-transform:uppercase;" placeholder="D"></div>
+                       </div>`
+            },
+            allee: {
+                single: `<div class="field"><label>Numéro d'allée</label><input type="number" id="a" placeholder="ex: 12"></div>`,
+                mass: `<div class="grid-inputs"><div class="field"><label>De l'allée</label><input type="number" id="a_start" placeholder="ex: 1"></div><div class="field"><label>À l'allée</label><input type="number" id="a_end" placeholder="ex: 10"></div></div>`
+            },
+            badge: `<div class="field" style="margin-bottom:14px;"><label>Nom de l'Opérateur</label><input type="text" id="b_name" placeholder="ex: DUPONT Jean"></div><div class="field"><label>N° Badge (4 chiffres)</label><input type="number" id="b_id" maxlength="4" placeholder="ex: 1234"></div>`,
+            etoile: `<div class="field"><label>Numéro ou code texte (Points)</label><input type="text" id="star_code" placeholder="ex: 5522051"></div>`
+        };
 
         function escapeHtml(s) {
             return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -789,19 +988,12 @@
             if (event && event.target) event.target.classList.add('active');
         }
 
-        function setMode(mode) {
-            currentMode = mode;
-            document.getElementById('mode-single').className = mode === 'single' ? 'mode-btn active' : 'mode-btn';
-            document.getElementById('mode-mass').className = mode === 'mass' ? 'mode-btn active' : 'mode-btn';
-            document.getElementById('singleZone').style.display = mode === 'single' ? 'flex' : 'none';
-            document.getElementById('massZone').style.display = mode === 'mass' ? 'flex' : 'none';
-            if (mode === 'single') update();
-            else updateMass();
-        }
-
         function resetForm() {
-            document.getElementById('inputData').value = '';
-            document.getElementById('inputDataMass').value = '';
+            setSubMode(subMode);
+            selectedArea = null;
+            document.querySelectorAll('.area-btn').forEach(b => b.classList.remove('active'));
+            const badge = document.getElementById('selectedAreaBadge');
+            if (badge) badge.innerText = 'Aucune';
             document.getElementById('print-zone').innerHTML = '';
             document.getElementById('emptyPreview').style.display = 'flex';
             document.getElementById('previewCountBadge').innerText = '0 étiquette';
@@ -810,7 +1002,7 @@
             labelsToPrint = [];
         }
 
-        /* Thème sombre / clair */
+        // Mode Sombre / Clair avec mémorisation locale
         function initTheme() {
             const saved = localStorage.getItem('npqrcode-theme');
             if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -837,62 +1029,14 @@
             }
         }
 
-        /* =====================================================================
-           CALIBRATION IMPRIMANTE ZEBRA & POSITIONNEMENT ZPL EXACT
-           ===================================================================== */
-        const PRINTER = {
-            dpi: 203,                 // 203 dpi = 8 dots/mm
-            labelW: 304,              // 1.5 in en dots (38.1 mm)
-            labelH: 203,              // 1.0 in en dots (25.4 mm)
-            dmModule: 6,              // 6 dots = 0.75 mm par module
-            dmQuality: 200,           // ECC 200
-            useLabelLength: false,
-            utf8: true,
-            sdkFiles: ['BrowserPrint-3.1.250.min.js', 'BrowserPrint-3.0.216.min.js', 'BrowserPrint-1.0.4.min.js', 'BrowserPrint.min.js', 'browserprint.min.js'],
-            agentUrls: ['https://localhost:9101/available', 'http://localhost:9101/available']
-        };
-
-        function zplText(s) {
-            let t = String(s == null ? '' : s).replace(/[\^~\\]/g, ' ').replace(/\s+/g, ' ').trim();
-            if (!PRINTER.utf8) t = t.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-            return t;
+        // Génère un code via bwip-js sur canvas temporaire -> PNG data URL (indispensable pour l'impression)
+        function renderCodeToPng(opts) {
+            const canvas = document.createElement('canvas');
+            bwipjs.toCanvas(canvas, opts);
+            return canvas.toDataURL('image/png');
         }
 
-        function zplHeader() {
-            let s = '^XA\n';
-            if (PRINTER.utf8) s += '^CI28\n';
-            s += '^PW' + PRINTER.labelW + '\n';
-            if (PRINTER.useLabelLength) s += '^LL' + PRINTER.labelH + '\n';
-            return s;
-        }
-
-        /**
-         * ZPL ÉTOILE / POINTS :
-         * Calcule dynamiquement le centrage vertical et horizontal pour que la chaîne
-         * de chiffres soit positionnée IMMÉDIATEMENT sous le Data Matrix (8 dots = 1 mm).
-         * Fini l'écart de 8 mm où le texte était tout en bas !
-         */
-        function zplEtoile(code, rows, cols) {
-            const r = rows || 14;
-            const c = cols || 14;
-            const dmH = r * PRINTER.dmModule;
-            const dmW = c * PRINTER.dmModule;
-            const gap = 8; // Espace compact : 8 dots = 1 mm
-            const textH = 26; // Hauteur police A0
-            const totalH = dmH + gap + textH;
-            
-            // Centrage vertical harmonieux de l'ensemble (Code + Chiffres)
-            const dmY = Math.max(6, Math.round((PRINTER.labelH - totalH) / 2));
-            const dmX = Math.round((PRINTER.labelW - dmW) / 2);
-            const textY = dmY + dmH + gap;
-
-            return zplHeader()
-                + '^FO' + dmX + ',' + dmY + '^BXN,' + PRINTER.dmModule + ',' + PRINTER.dmQuality + ',0,0,6^FD' + zplText(code) + '^FS\n'
-                + '^FO0,' + textY + '^A0N,28,24^FB' + PRINTER.labelW + ',1,0,C,0^FD' + zplText(code) + '^FS\n'
-                + '^XZ\n';
-        }
-
-        // Rendu Data Matrix haute fidélité (1 pixel = 1 dot à 203 DPI)
+        // Data Matrix rendu à la taille exacte de l'imprimante : 1 pixel = 1 dot (203 dpi)
         function dmPngData(text, moduleDots, quiet) {
             const raw = bwipjs.raw({ bcid: 'datamatrix', text: String(text) })[0];
             const cols = raw.pixx, rows = raw.pixy, pix = raw.pixs;
@@ -911,6 +1055,7 @@
             return { dataUrl: cv.toDataURL('image/png'), dots: side, rows: rows, cols: cols };
         }
 
+        // Taille physique de l'image à l'impression : dots pixels imprimante à 203 dpi
         function imgSizeStyle(dots) {
             if (!dots) return '';
             const inch = (dots / PRINTER.dpi).toFixed(4);
@@ -918,84 +1063,279 @@
         }
 
         /* =====================================================================
-           GÉNÉRATION DES ÉTIQUETTES (UNIQUE ET MASSE)
+           IMPRESSION : 3 modes automatiques
+           1) WebUSB DIRECT : Chrome communique directement au câble USB de la Zebra.
+              Zéro dialogue, silencieux, 100% dans le navigateur !
+           2) ZEBRA BROWSER PRINT : Si le service Zebra officiel tourne sur le poste.
+           3) NAVIGATEUR : Iframe calibré @page 1.5in x 1in (marges 0).
            ===================================================================== */
-        function addLabelItem(val) {
-            const dm = dmPngData(val, 6, 2);
-            const zpl = zplEtoile(val, dm.rows, dm.cols);
-            labelsToPrint.push({ dataUrl: dm.dataUrl, text: val, zpl: zpl, dots: dm.dots });
+        const PRINTER = {
+            dpi: 203,                 // Zebra LP 2824 Plus : 203 dpi = 8 dots/mm
+            labelW: 304,              // 1.5 in en dots
+            labelH: 203,              // 1 in en dots
+            dmModule: 6,              // module Data Matrix : 6 dots = 0,75 mm
+            dmQuality: 200,           // ECC 200 (obligatoire pour les douchettes)
+            dmSize: [18, 18],         // symbole forcé 18x18
+            eanModule: 3,             // barre fine EAN13 : 3 dots = 0,375 mm
+            useLabelLength: false,    // true = ajoute ^LL203
+            utf8: true,               // encodage UTF-8
+            sdkFiles: ['BrowserPrint-3.1.250.min.js', 'BrowserPrint-3.0.216.min.js', 'BrowserPrint-1.0.4.min.js', 'BrowserPrint.min.js', 'browserprint.min.js'],
+            agentUrls: ['https://localhost:9101/available', 'http://localhost:9101/available']
+        };
 
+        // Texte ZPL pour ^FD
+        function zplText(s, upper) {
+            let t = String(s == null ? '' : s).replace(/[\^~\\]/g, ' ').replace(/\s+/g, ' ').trim();
+            if (upper) t = t.toUpperCase();
+            if (!PRINTER.utf8) t = t.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            return t;
+        }
+
+        function zplHeader() {
+            let s = '^XA\n';
+            if (PRINTER.utf8) s += '^CI28\n';
+            s += '^PW' + PRINTER.labelW + '\n';
+            if (PRINTER.useLabelLength) s += '^LL' + PRINTER.labelH + '\n';
+            return s;
+        }
+
+        function zplEmplacement(code, areaNum, texte) {
+            return zplHeader()
+                + '^FO16,22^A0N,26,24^FB84,1,0,C,0^FDAREA^FS\n'
+                + '^FO16,52^A0N,56,48^FB84,1,0,C,0^FD' + zplText(areaNum) + '^FS\n'
+                + '^FO130,16^BXN,' + PRINTER.dmModule + ',' + PRINTER.dmQuality + ',0,0,6^FD' + code + '^FS\n'
+                + '^FO0,140^A0N,48,36^FB' + PRINTER.labelW + ',1,0,C,0^FD' + zplText(texte, true) + '^FS\n'
+                + '^XZ\n';
+        }
+
+        function zplEtoile(code, rows, cols) {
+            const r = rows || 14;
+            const c = cols || 14;
+            const dmH = r * PRINTER.dmModule;
+            const dmW = c * PRINTER.dmModule;
+            const gap = 8;
+            const textH = 26;
+            const totalH = dmH + gap + textH;
+            const dmY = Math.max(6, Math.round((PRINTER.labelH - totalH) / 2));
+            const dmX = Math.round((PRINTER.labelW - dmW) / 2);
+            const textY = dmY + dmH + gap;
+
+            return zplHeader()
+                + '^FO' + dmX + ',' + dmY + '^BXN,' + PRINTER.dmModule + ',' + PRINTER.dmQuality + ',0,0,6^FD' + zplText(code) + '^FS\n'
+                + '^FO0,' + textY + '^A0N,28,24^FB' + PRINTER.labelW + ',1,0,C,0^FD' + zplText(code) + '^FS\n'
+                + '^XZ\n';
+        }
+
+        function zplAllee(ean, areaRoom, sens) {
+            return zplHeader()
+                + '^FO0,10^A0N,26,24^FB' + PRINTER.labelW + ',1,0,C,0^FD' + zplText(areaRoom) + '^FS\n'
+                + '^FO0,38^A0N,44,38^FB' + PRINTER.labelW + ',1,0,C,0^FD' + zplText(sens) + '^FS\n'
+                + '^BY' + PRINTER.eanModule + ',2.0,90\n'
+                + '^FO9,88^BEN,90,N,N^FD' + ean + '^FS\n'
+                + '^XZ\n';
+        }
+
+        function zplBadge(ean, nom) {
+            return zplHeader()
+                + '^BY' + PRINTER.eanModule + ',2.0,80\n'
+                + '^FO9,15^BEN,80,N,N^FD' + ean + '^FS\n'
+                + '^FO0,118^A0N,40,34^FB' + PRINTER.labelW + ',1,0,C,0^FD' + zplText(nom, true) + '^FS\n'
+                + '^FO8,155^GB289,2,2^FS\n'
+                + '^XZ\n';
+        }
+
+        function setupAreaGrid() {
+            const container = document.getElementById('area-grid-btns');
+            container.innerHTML = '';
+            areaList.forEach(num => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'area-btn' + (selectedArea === num ? ' active' : '');
+                btn.innerText = 'Area ' + num;
+                btn.onclick = () => {
+                    selectedArea = num;
+                    document.querySelectorAll('.area-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const badge = document.getElementById('selectedAreaBadge');
+                    if (badge) badge.innerText = 'Area ' + num;
+                    checkAutoGenerate();
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function switchTab(tab, el) {
+            currentTab = tab;
+            selectedArea = null;
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+            
+            // Titre de l'onglet
+            const titleEl = document.getElementById('tab-title');
+            if (titleEl) titleEl.innerText = el.querySelector('span') ? el.querySelector('span').innerText : el.innerText;
+            
+            // Visibilité sous-modes et zones
+            const hasArea = (tab === 'emplacement' || tab === 'allee');
+            document.getElementById('mode-ui').style.display = hasArea ? 'flex' : 'none';
+            document.getElementById('area-selection-zone').style.display = hasArea ? 'flex' : 'none';
+            
+            if (hasArea) {
+                setupAreaGrid();
+                const badge = document.getElementById('selectedAreaBadge');
+                if (badge) badge.innerText = 'Aucune';
+            }
+            setSubMode('single');
+        }
+
+        function setSubMode(mode) {
+            subMode = mode;
+            document.getElementById('mode-single').className = mode === 'single' ? 'mode-btn active' : 'mode-btn';
+            document.getElementById('mode-mass').className = mode === 'mass' ? 'mode-btn active' : 'mode-btn';
+            document.getElementById('form-container').innerHTML = (currentTab === 'emplacement' || currentTab === 'allee') ? forms[currentTab][mode] : forms[currentTab];
+            
+            document.querySelectorAll('#form-container input').forEach(input => {
+                input.addEventListener('keyup', checkAutoGenerate);
+                input.addEventListener('change', checkAutoGenerate);
+                input.addEventListener('input', checkAutoGenerate);
+            });
+            
+            document.getElementById('print-zone').innerHTML = '';
+            document.getElementById('emptyPreview').style.display = 'flex';
+            document.getElementById('previewCountBadge').innerText = '0 étiquette';
+            document.getElementById('btnPrint').style.display = 'none';
+            document.getElementById('printHint').style.display = 'none';
+            labelsToPrint = [];
+        }
+
+        function checkAutoGenerate() {
+            const inputs = Array.from(document.querySelectorAll('#form-container input'));
+            const allFilled = inputs.length > 0 && inputs.every(i => i.value.trim() !== "");
+            const areaOk = (currentTab === 'emplacement' || currentTab === 'allee') ? selectedArea !== null : true;
+            if (allFilled && areaOk) {
+                generate();
+            }
+        }
+
+        // Ajoute une étiquette dans le studio d'aperçu
+        function addLabel(dataUrl, html, zpl, dots, isCustom) {
+            labelsToPrint.push({ dataUrl: dataUrl, html: html, zpl: zpl, dots: dots || 0, isCustom: !!isCustom });
             const pz = document.getElementById('print-zone');
             const div = document.createElement('div');
             div.className = 'label-style';
-            // Chiffres positionnés juste sous l'image avec un gap CSS compact
-            div.innerHTML = `
-                <div class="barcode-box">
-                    <img src="${dm.dataUrl}" alt=""${imgSizeStyle(dm.dots)}>
-                </div>
-                <div class="res-text">${escapeHtml(val)}</div>
-            `;
+            div.innerHTML = isCustom ? html : `<div class="barcode-box"><img src="${dataUrl}" alt=""${imgSizeStyle(dots)}></div>${html}`;
             pz.appendChild(div);
         }
 
-        function finalizeGeneration() {
-            const count = labelsToPrint.length;
-            const emptyEl = document.getElementById('emptyPreview');
-            const btn = document.getElementById('btnPrint');
-            const btnText = document.getElementById('btnPrintText');
-            const hint = document.getElementById('printHint');
-            const badge = document.getElementById('previewCountBadge');
+        async function generate() {
+            const pz = document.getElementById('print-zone');
+            pz.innerHTML = '';
+            labelsToPrint = [];
 
-            emptyEl.style.display = count > 0 ? 'none' : 'flex';
-            badge.innerText = `${count} étiquette${count > 1 ? 's' : ''}`;
-
-            if (count > 0) {
-                btn.style.display = 'inline-flex';
-                btnText.innerText = count === 1 ? "IMPRIMER L'ÉTIQUETTE" : `IMPRIMER LES ${count} ÉTIQUETTES`;
-                if (!usbPrinterDevice && bpState !== true) {
-                    hint.style.display = 'block';
+            try {
+                if (currentTab === 'emplacement') {
+                    let tasks = [];
+                    if (subMode === 'single') {
+                        tasks.push({
+                            z: selectedArea,
+                            a: document.getElementById('a').value,
+                            etg: document.getElementById('etg').value.toUpperCase(),
+                            niv: document.getElementById('niv').value,
+                            pl: document.getElementById('pl').value.toUpperCase()
+                        });
+                    } else {
+                        const a = document.getElementById('a').value;
+                        const s = document.getElementById('etg_start').value.toUpperCase().charCodeAt(0);
+                        const e = document.getElementById('etg_end').value.toUpperCase().charCodeAt(0);
+                        const nMax = parseInt(document.getElementById('niv_max').value);
+                        const pMax = document.getElementById('pl_end').value.toUpperCase().charCodeAt(0);
+                        for (let ie = s; ie <= e; ie++) {
+                            for (let iniv = 1; iniv <= nMax; iniv++) {
+                                for (let ip = 65; ip <= pMax; ip++) {
+                                    tasks.push({ z: selectedArea, a, etg: String.fromCharCode(ie), niv: iniv, pl: String.fromCharCode(ip) });
+                                }
+                            }
+                        }
+                    }
+                    for (let i = 0; i < tasks.length; i++) {
+                        let t = tasks[i];
+                        let code = parseInt((t.z == '0' ? '2030' : '21' + ('0' + t.z).slice(-2)) + '00000000') + (parseInt(t.a) * 1000000) + (t.etg.charCodeAt(0)-64)*10000 + (parseInt(t.niv)*100) + (t.pl.charCodeAt(0)-64);
+                        let dm = dmPngData(code.toString(), 6, 2);
+                        let texte = `${t.a} - ${t.etg} - ${t.niv} - ${t.pl}`;
+                        let html = `
+                            <div class="emp-top-row">
+                                <div class="area-block">
+                                    <span class="area-title">AREA</span>
+                                    <span class="area-num">${escapeHtml(t.z)}</span>
+                                </div>
+                                <div class="barcode-box dm-box"><img src="${dm.dataUrl}" alt=""${imgSizeStyle(dm.dots)}></div>
+                            </div>
+                            <div class="emp-bottom-text">${escapeHtml(texte)}</div>
+                        `;
+                        addLabel(dm.dataUrl, html, zplEmplacement(code.toString(), t.z, texte), dm.dots, true);
+                    }
+                } else if (currentTab === 'allee') {
+                    let list = [];
+                    if (subMode === 'single') {
+                        list.push({ z: selectedArea, a: document.getElementById('a').value });
+                    } else {
+                        const start = parseInt(document.getElementById('a_start').value);
+                        const end = parseInt(document.getElementById('a_end').value);
+                        for (let i = start; i <= end; i++) list.push({ z: selectedArea, a: i.toString() });
+                    }
+                    for (let i = 0; i < list.length; i++) {
+                        let t = list[i];
+                        const aF = t.a.padStart(2, '0');
+                        const zF = t.z.toString().padStart(2, '0');
+                        const configs = [
+                            { id: `${i}AZ`, text: `20330000${zF}${aF}`, t: `Area ${t.z} Room ${t.a}`, d: 'A ➔ Z' },
+                            { id: `${i}ZA`, text: `20330100${zF}${aF}`, t: `Area ${t.z} Room ${t.a}`, d: 'Z ➔ A' }
+                        ];
+                        configs.forEach(conf => {
+                            let dataUrl = renderCodeToPng({ bcid: 'ean13', text: conf.text, scale: 4, height: 14 });
+                            let html = `
+                                <div class="allee-header">${escapeHtml(conf.t)}</div>
+                                <div class="allee-dir">${escapeHtml(conf.d)}</div>
+                                <div class="barcode-box tall-barcode"><img src="${dataUrl}" alt=""></div>
+                            `;
+                            addLabel(dataUrl, html, zplAllee(conf.text, conf.t, conf.d.replace('➔', '->')), 0, true);
+                        });
+                    }
+                } else if (currentTab === 'badge') {
+                    const id = document.getElementById('b_id').value;
+                    const name = document.getElementById('b_name').value;
+                    const base = "20320000" + id.toString().padStart(4, '0');
+                    let dataUrl = renderCodeToPng({ bcid: 'ean13', text: base, scale: 4, height: 12 });
+                    let html = `
+                        <div style="font-size:14pt; border-bottom:1.5px solid #000; width:95%; height:0.4in; display:flex; align-items:center; justify-content:center; font-weight:bold; text-transform:uppercase;">${escapeHtml(name || id)}</div>
+                        <div class="barcode-box"><img src="${dataUrl}" alt=""></div>
+                    `;
+                    addLabel(dataUrl, html, zplBadge(base, name || id), 0, true);
+                } else if (currentTab === 'etoile') {
+                    const sc = document.getElementById('star_code').value;
+                    let dm = dmPngData(sc, 6, 2);
+                    let html = `
+                        <div class="barcode-box"><img src="${dm.dataUrl}" alt=""${imgSizeStyle(dm.dots)}></div>
+                        <div class="res-text">${escapeHtml(sc)}</div>
+                    `;
+                    addLabel(dm.dataUrl, html, zplEtoile(sc, dm.rows, dm.cols), dm.dots, true);
                 }
-            } else {
-                btn.style.display = 'none';
-                hint.style.display = 'none';
-            }
-            updatePrinterStatus();
-        }
 
-        function update() {
-            const val = document.getElementById('inputData').value.trim();
-            const pz = document.getElementById('print-zone');
-            pz.innerHTML = '';
-            labelsToPrint = [];
-
-            if (!val) {
-                finalizeGeneration();
-                return;
-            }
-
-            try {
-                addLabelItem(val);
-                finalizeGeneration();
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
-        function updateMass() {
-            const raw = document.getElementById('inputDataMass').value;
-            const lines = raw.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean);
-            const pz = document.getElementById('print-zone');
-            pz.innerHTML = '';
-            labelsToPrint = [];
-
-            if (!lines.length) {
-                finalizeGeneration();
-                return;
-            }
-
-            try {
-                lines.forEach(val => addLabelItem(val));
-                finalizeGeneration();
+                // Mise à jour de l'affichage
+                const count = labelsToPrint.length;
+                document.getElementById('emptyPreview').style.display = count > 0 ? 'none' : 'flex';
+                document.getElementById('previewCountBadge').innerText = `${count} étiquette${count > 1 ? 's' : ''}`;
+                
+                const btnPrint = document.getElementById('btnPrint');
+                const btnPrintText = document.getElementById('btnPrintText');
+                if (count > 0) {
+                    btnPrint.style.display = 'inline-flex';
+                    btnPrintText.innerText = count === 1 ? "IMPRIMER L'ÉTIQUETTE" : `IMPRIMER LES ${count} ÉTIQUETTES`;
+                    // Affichage du hint uniquement si pas d'impression directe détectée
+                    if (!usbPrinterDevice && bpState !== true) {
+                        document.getElementById('printHint').style.display = 'block';
+                    }
+                }
+                updatePrinterStatus();
             } catch (e) {
                 console.error(e);
             }
@@ -1016,7 +1356,9 @@
             try {
                 const devices = await navigator.usb.getDevices();
                 const zebra = devices.find(d => d.vendorId === 0x0a5f);
-                if (zebra) await setupUsbPrinter(zebra);
+                if (zebra) {
+                    await setupUsbPrinter(zebra);
+                }
             } catch (err) {
                 console.log("Recherche USB auto:", err);
             }
@@ -1096,7 +1438,7 @@
         }
 
         /* =====================================================================
-           ZEBRA BROWSER PRINT
+           ZEBRA BROWSER PRINT (Service local Zebra)
            ===================================================================== */
         let bpState = null;
         let bpProbe = null;
@@ -1161,11 +1503,14 @@
                 await new Promise((resolve, reject) => printer.send(zpl, resolve, e => reject(new Error(String(e)))));
                 return true;
             } catch (e) {
-                console.warn('Browser Print error:', e);
+                console.warn('Browser Print:', e);
                 return 'error';
             }
         }
 
+        /* =====================================================================
+           MISE À JOUR DES STATUTS
+           ===================================================================== */
         function updatePrinterStatus() {
             const dot = document.getElementById('statusDot');
             const txt = document.getElementById('printerStatusText');
@@ -1200,15 +1545,14 @@
         function browserPrint() {
             const labelsHtml = labelsToPrint.map(l => `
     <div class="label">
-        <div class="barcode-box"><img src="${l.dataUrl}" alt=""${imgSizeStyle(l.dots)}></div>
-        <div class="res-text">${escapeHtml(l.text)}</div>
+        ${l.isCustom ? l.html : `<div class="barcode-box"><img src="${l.dataUrl}" alt=""${imgSizeStyle(l.dots)}></div>${l.html}`}
     </div>`).join('');
 
             const html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Impression étiquettes Points</title>
+<title>Impression étiquettes</title>
 <style>
     @page { size: 1.5in 1in; margin: 0; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1216,33 +1560,54 @@
     .label {
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: space-between;
         align-items: center;
         width: 1.5in; height: 1in;
-        gap: 2px;
-        padding: 0;
+        padding: 4px 6px;
         overflow: hidden;
         page-break-after: always;
+        box-sizing: border-box;
     }
     .label:last-child { page-break-after: auto; }
+    
+    .emp-top-row { display: flex; width: 100%; align-items: center; justify-content: space-between; padding: 2px 8px 0; box-sizing: border-box; }
+    .area-block { display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; min-width: 55px; }
+    .area-title { font-size: 8pt; font-weight: 900; letter-spacing: 1px; color: #000; text-transform: uppercase; font-family: Arial, sans-serif; }
+    .area-num { font-size: 20pt; font-weight: 900; color: #000; line-height: 1; margin-top: 2px; font-family: Arial, sans-serif; }
+    .dm-box { display: flex; align-items: center; justify-content: center; }
+    .dm-box img { max-height: 0.54in; max-width: 0.54in; image-rendering: pixelated; }
+    .emp-bottom-text { font-size: 13.5pt; font-weight: 900; color: #000; letter-spacing: 0.8px; text-align: center; width: 100%; line-height: 1; margin-bottom: 3px; white-space: nowrap; font-family: Arial, sans-serif; }
+
+    .allee-header { font-size: 8.5pt; font-weight: 800; color: #000; letter-spacing: 0.5px; text-align: center; text-transform: uppercase; line-height: 1; margin-top: 2px; font-family: Arial, sans-serif; }
+    .allee-dir { font-size: 15pt; font-weight: 900; color: #000; letter-spacing: 1.5px; text-align: center; line-height: 1; margin: 3px 0 2px; font-family: Arial, sans-serif; }
+    .tall-barcode { width: 100%; display: flex; justify-content: center; align-items: center; }
+    .tall-barcode img { max-height: 0.48in; max-width: 96%; image-rendering: pixelated; }
+
     .label .barcode-box {
+        width: 100%;
         display: flex; justify-content: center; align-items: center;
-        line-height: 0;
+        overflow: hidden;
     }
     .label img {
-        max-height: 0.60in; max-width: 0.60in;
-        display: block;
+        max-height: 0.55in; max-width: 92%;
         image-rendering: pixelated;
     }
     .label .res-text {
         font-weight: 800;
         font-size: 8pt;
+        margin-top: 3px;
         letter-spacing: 0.5px;
-        font-family: 'SF Mono', Consolas, monospace;
+        font-family: 'Courier New', monospace;
         color: #000;
         text-align: center;
-        line-height: 1;
-        margin: 0; padding: 0;
+        word-break: break-all;
+    }
+    .label [style*="border-bottom"] {
+        font-size: 14pt;
+        font-weight: bold;
+        text-transform: uppercase;
+        color: #000;
+        font-family: Arial, sans-serif;
     }
     @media print {
         html, body { width: 1.5in !important; height: auto !important; margin: 0 !important; padding: 0 !important; }
@@ -1278,13 +1643,13 @@
            ===================================================================== */
         async function printLabels() {
             if (!labelsToPrint.length) {
-                alert("Générez d'abord une étiquette.");
+                alert("Générez d'abord les étiquettes.");
                 return;
             }
 
             const zpl = labelsToPrint.map(l => l.zpl).filter(Boolean).join('');
 
-            // 1. Essai WebUSB
+            // 1. Essai d'impression directe WebUSB
             if (usbPrinterDevice && zpl) {
                 const ok = await printDirectUsb(zpl);
                 if (ok) {
@@ -1293,7 +1658,7 @@
                 }
             }
 
-            // 2. Essai Zebra Browser Print
+            // 2. Essai d'impression directe Zebra Browser Print
             if (zpl) {
                 const res = await directPrint(zpl);
                 if (res === true) {
@@ -1310,6 +1675,7 @@
 
         window.onload = () => {
             initTheme();
+            switchTab('emplacement', document.getElementById('btn-emp'));
             initWebUsb();
             bpReady().then(updatePrinterStatus);
         };
