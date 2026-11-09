@@ -1368,7 +1368,7 @@
 
             navigator.usb.addEventListener('connect', async (event) => {
                 if (event.device && event.device.vendorId === 0x0a5f) {
-                    await setupUsbPrinter(event.device);
+                    await setupUsbPrinter(event.device, { silent: true });
                 }
             });
 
