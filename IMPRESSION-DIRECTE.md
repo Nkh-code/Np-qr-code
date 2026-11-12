@@ -1,4 +1,4 @@
-# Impression des étiquettes POINTS — mode direct (sans dialogue)
+# Impression des étiquettes — mode direct (sans dialogue)
 
 Deux façons d'imprimer sans la fenêtre d'impression de Chrome. Elles sont indépendantes :
 on peut faire la première tout de suite, la seconde quand l'informatique est disponible.
@@ -41,8 +41,8 @@ Ce que ça change concrètement :
 - **codes net au point près** : plus de réduction d'image par le navigateur, donc des barres et
   des modules aux largeurs entières ;
 - **silencieux et instantané** : aucun dialogue d'impression ;
-- les **valeurs encodées sont identiques** à aujourd'hui (vérifié : `5522051`,
-  `ABCD1234567890XYZ`, `Étoile-Île`) — rien ne change pour les douchettes.
+- les **valeurs encodées sont identiques** à aujourd'hui (vérifié : `210102020303`,
+  `2033000003076`, …) — rien ne change pour les douchettes ni pour les systèmes en aval.
 
 ### Installation (par poste, une seule fois)
 
@@ -82,9 +82,12 @@ quand même, exactement comme aujourd'hui.
 - **Rien ne sort du tout en mode direct (ni code ni texte)** : le Data Matrix ECC 200
   (`dmQuality: 200`) demande un firmware récent. Vérifier la version du firmware de
   l'imprimante ; en attendant, rester en impression navigateur (repli automatique).
-- **Codes longs** : ce générateur accepte du texte libre. Un texte très long agrandit le Data
-  Matrix (il reste centré mais descend vers la ligne de texte). Pour un code de points standard
-  (7 chiffres) aucun souci.
+- **Le code EAN13 (onglets Allée / Badge) est limite** : sur une étiquette de 38 mm il ne reste
+  que ~1 mm de blanc de chaque côté du code, alors que la norme EAN13 en demande 4 mm. C'est une
+  limite physique du format d'étiquette, pas un bug. La solution : commander des **étiquettes de
+  55 mm de large** (l'imprimante imprime jusqu'à 56 mm) — on peut alors respecter les zones de
+  silence, et même imprimer 2 étiquettes côte à côte. Les étiquettes Emplacement / Étoile
+  (Data Matrix) n'ont pas ce problème.
 
 ---
 
@@ -96,6 +99,8 @@ quand même, exactement comme aujourd'hui.
 | `labelW` / `labelH` | 304 / 203 | étiquette 1,5 × 1 in en dots |
 | `dmModule` | 6 | taille d'un module Data Matrix en dots (6 = 0,75 mm) |
 | `dmQuality` | 200 | ECC 200 — indispensable pour les douchettes actuelles |
+| `dmSize` | `[18, 18]` | taille de symbole imposée (étiquettes Emplacement) |
+| `eanModule` | 3 | largeur de la barre fine EAN13 en dots (3 = 0,375 mm) |
 | `useLabelLength` | false | `true` = ajoute `^LL203` (longueur d'étiquette) |
 | `utf8` | true | `false` = accents remplacés (imprimante sans UTF-8) |
 | `sdkFiles` | liste | noms de fichiers du SDK Zebra cherchés à côté de la page |
@@ -105,6 +110,7 @@ quand même, exactement comme aujourd'hui.
 
 ## Ce qui n'a pas changé
 
-- Les **valeurs encodées** et la logique métier (codes de points) sont intactes.
+- Les **valeurs encodées** et la logique métier (codes des emplacements, allées, badges, points)
+  sont intactes.
 - Si Browser Print n'est pas installé, la page utilise le chemin d'impression navigateur, comme
   avant (avec ou sans le raccourci du point 1).
