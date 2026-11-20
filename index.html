@@ -752,27 +752,11 @@
         .res-text { font-weight: 800; font-size: 8pt; margin-top: 3px; letter-spacing: 0.5px; font-family: var(--font-mono); color: #000 !important; }
 
         /* Étiquette texte libre : lignes déjà découpées par freeTextLayout() */
-        .free-label {
+        .label-img {
+            display: block;
             width: 100%;
             height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            color: #000 !important;
-            font-family: -apple-system, Arial, sans-serif;
-            font-weight: 900;
-            -webkit-text-stroke: 0.3px #000;
-            line-height: 1.12;
-            padding: 0 2px;
-            box-sizing: border-box;
-            overflow: hidden;
-        }
-        .free-label div {
-            width: 100%;
-            white-space: nowrap;
-            overflow: hidden;
+            image-rendering: pixelated;
         }
         .barcode-box img { max-height: 0.55in; max-width: 92%; image-rendering: pixelated; }
 
@@ -1195,34 +1179,29 @@ NE PAS TOUCHER"></textarea></div>
            TEXTE LIBRE (onglet « Texte ») : même étiquette 38 × 25 mm
            Une seule mise en page, réutilisée par l'aperçu HTML et par le ZPL.
            ===================================================================== */
-        const FREE_TEXT_SIZES = [64, 58, 52, 46, 40, 36, 32, 28, 24, 20, 17];  // hauteurs en dots (203 dpi)
-        const LABEL_PAD = 4;                                                  // marge interne : 0,5 mm
-        const DOTS_TO_PX = 96 / PRINTER.dpi;                                  // 1 dot imprimante en px CSS
-        const MEASURE_SAFETY = 1.04;                                          // marge pour la police de l'imprimante
+        const FREE_TEXT_SIZES = [88, 80, 72, 64, 56, 50, 44, 38, 32, 27, 22, 18, 15];  // hauteurs en dots (203 dpi)
+        const LABEL_PAD = 3;                                                           // marge interne
+        const MEASURE_SAFETY = 1.02;                                                   // marge anti-rognage
 
-        // Mesure réelle du texte (canvas, Arial gras) → largeur en dots imprimante
+        // Mesure réelle du texte (canvas Arial gras) ; 1 px de canvas = 1 dot imprimante
         let _mctx = null;
         function measureDots(text, fontSizeDots) {
             if (!_mctx) _mctx = document.createElement('canvas').getContext('2d');
-            _mctx.font = '900 ' + (fontSizeDots * MEASURE_SAFETY * DOTS_TO_PX).toFixed(2) + 'px -apple-system, Arial, sans-serif';
-            return _mctx.measureText(text).width / DOTS_TO_PX;
+            _mctx.font = '900 ' + (fontSizeDots * MEASURE_SAFETY).toFixed(2) + 'px -apple-system, Arial, sans-serif';
+            return _mctx.measureText(text).width;
         }
 
-        // Découpe une ligne sur la largeur réellement mesurée
+        // Découpe une ligne aux espaces ; un mot n'est JAMAIS coupé :
+        // s'il ne rentre pas, la taille est rejetée (on prendra une police plus petite)
         function wrapWords(line, maxW, fontSize) {
             const words = line.split(' ').filter(w => w.length);
             if (!words.length) return [''];
+            for (const w of words) {
+                if (measureDots(w, fontSize) > maxW) return null;
+            }
             const out = [];
             let cur = '';
-            words.forEach(w0 => {
-                let word = w0;
-                while (measureDots(word, fontSize) > maxW) {      // mot plus large que l'étiquette : on le coupe
-                    let cut = word.length - 1;
-                    while (cut > 1 && measureDots(word.slice(0, cut), fontSize) > maxW) cut--;
-                    if (cur) { out.push(cur); cur = ''; }
-                    out.push(word.slice(0, cut));
-                    word = word.slice(cut);
-                }
+            words.forEach(word => {
                 if (!cur) cur = word;
                 else if (measureDots(cur + ' ' + word, fontSize) <= maxW) cur += ' ' + word;
                 else { out.push(cur); cur = word; }
@@ -1242,52 +1221,92 @@ NE PAS TOUCHER"></textarea></div>
             const usableW = PRINTER.labelW - 2 * LABEL_PAD;
             const usableH = PRINTER.labelH - 2 * LABEL_PAD;   // 187 dots
 
+            // Un code (chiffres uniquement) ne doit jamais être coupé ; une phrase peut passer sur 2 lignes
+            const splittable = rawLines.map(l => /[A-Z]/.test(l));
+
             const trySize = (h) => {
                 const lines = [];
-                rawLines.forEach(l => wrapWords(l, usableW, h).forEach(x => lines.push(x)));
-                return { fontSize: h, lines: lines, lineH: Math.round(h * 1.15) };
+                for (let i = 0; i < rawLines.length; i++) {
+                    const parts = wrapWords(rawLines[i], usableW, h);
+                    if (!parts) return null;                               // un mot ne rentre pas à cette taille
+                    if (parts.length > 1 && !splittable[i]) return null;   // un code ne doit pas être coupé
+                    parts.forEach(x => lines.push(x));
+                }
+                return { fontSize: h, lines: lines, lineH: Math.round(h * 1.08), extra: lines.length - rawLines.length };
             };
 
-            // 1) priorité : la plus grande taille où chaque ligne saisie reste entière
-            // 2) si ça donne un texte minuscule (< 3 mm), on accepte une seule coupure
             const fits = [];
             FREE_TEXT_SIZES.forEach(h => {
                 const lay = trySize(h);
-                if (lay.lines.length * lay.lineH <= usableH) fits.push(lay);   // ordre : grande → petite
+                if (lay && lay.lines.length * lay.lineH <= usableH) fits.push(lay);   // ordre : grande → petite
             });
-            if (!fits.length) return trySize(FREE_TEXT_SIZES[FREE_TEXT_SIZES.length - 1]);
+            if (!fits.length) {
+                const last = trySize(FREE_TEXT_SIZES[FREE_TEXT_SIZES.length - 1]);
+                return last || { fontSize: 15, lines: [rawLines[0]], lineH: 16, extra: 0 };
+            }
 
-            const noSplit = fits.filter(l => l.lines.length === rawLines.length);
-            if (noSplit.length && noSplit[0].fontSize >= 26) return noSplit[0];
-
-            const oneSplit = fits.filter(l => l.lines.length <= rawLines.length + 1);
-            if (oneSplit.length) return oneSplit[0];
-
-            return noSplit[0] || fits[0];
+            const noSplitBest = fits.find(l => l.extra === 0);
+            const largest = fits[0];
+            // On accepte de couper une phrase seulement si ça permet au moins 25 % plus grand
+            if (noSplitBest && largest.fontSize < noSplitBest.fontSize * 1.25) return noSplitBest;
+            return largest;
         }
 
-        // Aperçu écran / navigateur : 1 dot = 1/203 in
-        function freeTextHtml(layout) {
-            const pt = (layout.fontSize * 72 / PRINTER.dpi).toFixed(2);
-            const lh = (layout.lineH / layout.fontSize).toFixed(3);
-            return `<div class="free-label" style="font-size:${pt}pt; line-height:${lh};">`
-                + layout.lines.map(l => `<div>${escapeHtml(l)}</div>`).join('')
-                + `</div>`;
-        }
+        /* ---------- Rendu de l'étiquette : un seul bitmap pour tout ---------- */
+        function renderLabel(layout) {
+            const cv = document.createElement('canvas');
+            cv.width = PRINTER.labelW;
+            cv.height = PRINTER.labelH;
+            const ctx = cv.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, cv.width, cv.height);
 
-        // ZPL : une ligne = un champ ^FB, empilées et centrées verticalement
-        function zplTexte(layout) {
+            const px = layout.fontSize;                       // 1 px de canvas = 1 dot imprimante
+            ctx.font = '900 ' + px.toFixed(2) + 'px -apple-system, Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#000000';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = Math.max(0.4, px * 0.045);        // épaissit encore les traits (gras marqué)
+            ctx.lineJoin = 'round';
+
             const totalH = layout.lines.length * layout.lineH;
-            const startY = Math.max(0, Math.round((PRINTER.labelH - totalH) / 2));
-            const w = Math.round(layout.fontSize * 0.85);
-            let s = zplHeader();
+            const startY = Math.round((PRINTER.labelH - totalH) / 2);
             layout.lines.forEach((line, i) => {
-                const y = startY + i * layout.lineH;
-                const t = zplText(line, true);
-                // double frappe décalée de 2 dots = gras
-                s += '^FO0,' + y + '^A0N,' + layout.fontSize + ',' + w + '^FB' + PRINTER.labelW + ',1,0,C,0^FD' + t + '^FS\n';
-                s += '^FO2,' + y + '^A0N,' + layout.fontSize + ',' + w + '^FB' + PRINTER.labelW + ',1,0,C,0^FD' + t + '^FS\n';
+                const y = startY + i * layout.lineH + layout.lineH / 2;
+                ctx.fillText(line, PRINTER.labelW / 2, y);
+                ctx.strokeText(line, PRINTER.labelW / 2, y);
             });
+            return cv;
+        }
+
+        function labelToHtml(cv) {
+            const url = cv.toDataURL('image/png');
+            return `<img src="${url}" alt="" class="label-img">`;
+        }
+
+        // L'étiquette part à la Zebra comme image 1 bit (^GFA, bandes de 51 lignes)
+        function zplTexte(cv) {
+            const ctx = cv.getContext('2d');
+            const { data } = ctx.getImageData(0, 0, cv.width, cv.height);
+            const W = cv.width, H = cv.height, bpr = W / 8, strip = 51;
+            let s = zplHeader();
+            for (let y0 = 0; y0 < H; y0 += strip) {
+                const rows = Math.min(strip, H - y0);
+                const bytes = bpr * rows;
+                let hex = '';
+                for (let y = y0; y < y0 + rows; y++) {
+                    for (let bx = 0; bx < bpr; bx++) {
+                        let byte = 0;
+                        for (let b = 0; b < 8; b++) {
+                            const idx = ((y * W) + bx * 8 + b) * 4;
+                            byte = (byte << 1) | (data[idx] < 140 ? 1 : 0);
+                        }
+                        hex += byte.toString(16).padStart(2, '0').toUpperCase();
+                    }
+                }
+                s += '^FO0,' + y0 + '^GFA,' + bytes + ',' + bytes + ',' + bpr + ',' + hex + '^FS\n';
+            }
             return s + '^XZ\n';
         }
 
@@ -1487,8 +1506,9 @@ NE PAS TOUCHER"></textarea></div>
                         let qty = parseInt(qtyEl ? qtyEl.value : '1', 10);
                         if (!qty || qty < 1) qty = 1;
                         if (qty > 50) qty = 50;
-                        const html = freeTextHtml(layout);
-                        const zpl = zplTexte(layout);
+                        const cv = renderLabel(layout);
+                        const html = labelToHtml(cv);
+                        const zpl = zplTexte(cv);
                         for (let i = 0; i < qty; i++) addLabel('', html, zpl, 0, true);
                     }
                 }
@@ -1750,7 +1770,7 @@ NE PAS TOUCHER"></textarea></div>
         justify-content: space-between;
         align-items: center;
         width: 1.5in; height: 1in;
-        padding: 4px 6px;
+        padding: 0;
         overflow: hidden;
         page-break-after: always;
         box-sizing: border-box;
@@ -1789,20 +1809,12 @@ NE PAS TOUCHER"></textarea></div>
         text-align: center;
         word-break: break-all;
     }
-    .free-label {
+    .label .label-img {
+        display: block;
         width: 100%; height: 100%;
-        display: flex; flex-direction: column;
-        justify-content: center; align-items: center;
-        text-align: center;
-        color: #000;
-        font-family: Arial, Helvetica, sans-serif;
-        font-weight: 900;
-        -webkit-text-stroke: 0.35px #000;
-        line-height: 1.12;
-        box-sizing: border-box;
-        overflow: hidden;
+        max-width: none; max-height: none;   /* neutralise les limites des autres types d'étiquettes */
+        image-rendering: pixelated;
     }
-    .free-label div { width: 100%; white-space: nowrap; overflow: hidden; }
     .label [style*="border-bottom"] {
         font-size: 14pt;
         font-weight: bold;
