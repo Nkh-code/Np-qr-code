@@ -762,7 +762,8 @@
             text-align: center;
             color: #000 !important;
             font-family: -apple-system, Arial, sans-serif;
-            font-weight: 800;
+            font-weight: 900;
+            -webkit-text-stroke: 0.3px #000;
             line-height: 1.12;
             padding: 0 2px;
             box-sizing: border-box;
@@ -1194,24 +1195,36 @@ NE PAS TOUCHER"></textarea></div>
            TEXTE LIBRE (onglet « Texte ») : même étiquette 38 × 25 mm
            Une seule mise en page, réutilisée par l'aperçu HTML et par le ZPL.
            ===================================================================== */
-        const FREE_TEXT_SIZES = [60, 52, 44, 36, 30, 26, 22, 18, 15];  // hauteurs en dots (203 dpi)
-        const LABEL_PAD = 8;                                            // marge interne : 1 mm
+        const FREE_TEXT_SIZES = [64, 58, 52, 46, 40, 36, 32, 28, 24, 20, 17];  // hauteurs en dots (203 dpi)
+        const LABEL_PAD = 4;                                                  // marge interne : 0,5 mm
+        const DOTS_TO_PX = 96 / PRINTER.dpi;                                  // 1 dot imprimante en px CSS
+        const MEASURE_SAFETY = 1.04;                                          // marge pour la police de l'imprimante
 
-        // Découpe une ligne en respectant les mots
-        function wrapWords(line, maxChars) {
+        // Mesure réelle du texte (canvas, Arial gras) → largeur en dots imprimante
+        let _mctx = null;
+        function measureDots(text, fontSizeDots) {
+            if (!_mctx) _mctx = document.createElement('canvas').getContext('2d');
+            _mctx.font = '900 ' + (fontSizeDots * MEASURE_SAFETY * DOTS_TO_PX).toFixed(2) + 'px -apple-system, Arial, sans-serif';
+            return _mctx.measureText(text).width / DOTS_TO_PX;
+        }
+
+        // Découpe une ligne sur la largeur réellement mesurée
+        function wrapWords(line, maxW, fontSize) {
             const words = line.split(' ').filter(w => w.length);
             if (!words.length) return [''];
             const out = [];
             let cur = '';
             words.forEach(w0 => {
                 let word = w0;
-                while (word.length > maxChars) {          // mot plus long que la ligne : on le coupe
+                while (measureDots(word, fontSize) > maxW) {      // mot plus large que l'étiquette : on le coupe
+                    let cut = word.length - 1;
+                    while (cut > 1 && measureDots(word.slice(0, cut), fontSize) > maxW) cut--;
                     if (cur) { out.push(cur); cur = ''; }
-                    out.push(word.slice(0, maxChars));
-                    word = word.slice(maxChars);
+                    out.push(word.slice(0, cut));
+                    word = word.slice(cut);
                 }
                 if (!cur) cur = word;
-                else if ((cur + ' ' + word).length <= maxChars) cur += ' ' + word;
+                else if (measureDots(cur + ' ' + word, fontSize) <= maxW) cur += ' ' + word;
                 else { out.push(cur); cur = word; }
             });
             if (cur) out.push(cur);
@@ -1222,18 +1235,17 @@ NE PAS TOUCHER"></textarea></div>
         function freeTextLayout(text) {
             const rawLines = String(text == null ? '' : text)
                 .replace(/\r/g, '').split('\n')
-                .map(l => l.replace(/\s+/g, ' ').trim())
+                .map(l => l.replace(/\s+/g, ' ').trim().toUpperCase())   // imprimé en majuscules
                 .filter(l => l !== '');
             if (!rawLines.length) return null;
 
-            const usableW = PRINTER.labelW - 2 * LABEL_PAD;   // 288 dots
+            const usableW = PRINTER.labelW - 2 * LABEL_PAD;
             const usableH = PRINTER.labelH - 2 * LABEL_PAD;   // 187 dots
 
             const trySize = (h) => {
-                const maxChars = Math.max(3, Math.floor(usableW / (0.65 * h)));  // pas moyen estimé d'une MAJUSCULE : 0,65 × hauteur
                 const lines = [];
-                rawLines.forEach(l => wrapWords(l, maxChars).forEach(x => lines.push(x)));
-                return { fontSize: h, lines: lines, lineH: Math.round(h * 1.15), maxChars: maxChars };
+                rawLines.forEach(l => wrapWords(l, usableW, h).forEach(x => lines.push(x)));
+                return { fontSize: h, lines: lines, lineH: Math.round(h * 1.15) };
             };
 
             // 1) priorité : la plus grande taille où chaque ligne saisie reste entière
@@ -1246,7 +1258,7 @@ NE PAS TOUCHER"></textarea></div>
             if (!fits.length) return trySize(FREE_TEXT_SIZES[FREE_TEXT_SIZES.length - 1]);
 
             const noSplit = fits.filter(l => l.lines.length === rawLines.length);
-            if (noSplit.length && noSplit[0].fontSize >= 24) return noSplit[0];
+            if (noSplit.length && noSplit[0].fontSize >= 26) return noSplit[0];
 
             const oneSplit = fits.filter(l => l.lines.length <= rawLines.length + 1);
             if (oneSplit.length) return oneSplit[0];
@@ -1267,11 +1279,14 @@ NE PAS TOUCHER"></textarea></div>
         function zplTexte(layout) {
             const totalH = layout.lines.length * layout.lineH;
             const startY = Math.max(0, Math.round((PRINTER.labelH - totalH) / 2));
+            const w = Math.round(layout.fontSize * 0.85);
             let s = zplHeader();
             layout.lines.forEach((line, i) => {
                 const y = startY + i * layout.lineH;
-                s += '^FO0,' + y + '^A0N,' + layout.fontSize + ',' + Math.round(layout.fontSize * 0.85)
-                   + '^FB' + PRINTER.labelW + ',1,0,C,0^FD' + zplText(line, true) + '^FS\n';
+                const t = zplText(line, true);
+                // double frappe décalée de 2 dots = gras
+                s += '^FO0,' + y + '^A0N,' + layout.fontSize + ',' + w + '^FB' + PRINTER.labelW + ',1,0,C,0^FD' + t + '^FS\n';
+                s += '^FO2,' + y + '^A0N,' + layout.fontSize + ',' + w + '^FB' + PRINTER.labelW + ',1,0,C,0^FD' + t + '^FS\n';
             });
             return s + '^XZ\n';
         }
@@ -1781,7 +1796,8 @@ NE PAS TOUCHER"></textarea></div>
         text-align: center;
         color: #000;
         font-family: Arial, Helvetica, sans-serif;
-        font-weight: 800;
+        font-weight: 900;
+        -webkit-text-stroke: 0.35px #000;
         line-height: 1.12;
         box-sizing: border-box;
         overflow: hidden;
