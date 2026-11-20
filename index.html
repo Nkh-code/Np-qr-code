@@ -851,7 +851,7 @@
                 </div>
                 <div class="brand-title">
                     <h1>Étoiles</h1>
-                    <span class="brand-subtitle">Zebra LP 2824 Plus <span class="brand-tag">38 × 25 mm</span> <span class="brand-tag">v15</span></span>
+                    <span class="brand-subtitle">Zebra LP 2824 Plus <span class="brand-tag">38 × 25 mm</span> <span class="brand-tag">v16</span></span>
                 </div>
             </div>
 
@@ -995,7 +995,7 @@
                 mass: `<div class="grid-inputs"><div class="field"><label>De l'allée</label><input type="number" id="a_start" placeholder="ex: 1"></div><div class="field"><label>À l'allée</label><input type="number" id="a_end" placeholder="ex: 10"></div></div>`
             },
             badge: `<div class="field" style="margin-bottom:14px;"><label>Nom de l'Opérateur</label><input type="text" id="b_name" placeholder="ex: DUPONT Jean"></div><div class="field"><label>N° Badge (4 chiffres)</label><input type="number" id="b_id" maxlength="4" placeholder="ex: 1234"></div>`,
-            etoile: `<div class="field"><label>Numéro ou code texte (Points)</label><input type="text" id="star_code" placeholder="ex: 5522051"></div>`,
+            etoile: `<div class="field"><label>Numéro du point (chiffres uniquement)</label><input type="text" id="star_code" inputmode="numeric" autocomplete="off" placeholder="ex: 5522051"></div>`,
             texte: `<div class="field"><label>Texte à imprimer</label><textarea id="free_text" rows="4" maxlength="200" placeholder="ex: RESERVE
 NE PAS TOUCHER"></textarea></div>
                     <div class="field" style="margin-top:14px;"><label>Nombre de copies</label><input type="number" id="free_qty" value="1" min="1" max="50" placeholder="1"></div>`
@@ -1332,6 +1332,13 @@ NE PAS TOUCHER"></textarea></div>
             document.getElementById('mode-mass').className = mode === 'mass' ? 'mode-btn active' : 'mode-btn';
             document.getElementById('form-container').innerHTML = (currentTab === 'emplacement' || currentTab === 'allee') ? forms[currentTab][mode] : forms[currentTab];
             
+            // Étoile : ne garder que les chiffres (copier-coller avec espaces, tabulations, points…)
+            const starInput = document.getElementById('star_code');
+            if (starInput) {
+                starInput.addEventListener('input', sanitizeStarCode);
+                starInput.addEventListener('change', sanitizeStarCode);
+            }
+
             document.querySelectorAll('#form-container input, #form-container textarea').forEach(input => {
                 input.addEventListener('keyup', checkAutoGenerate);
                 input.addEventListener('change', checkAutoGenerate);
@@ -1344,6 +1351,23 @@ NE PAS TOUCHER"></textarea></div>
             document.getElementById('btnPrint').style.display = 'none';
             document.getElementById('printHint').style.display = 'none';
             labelsToPrint = [];
+        }
+
+        // Étoile : le champ ne garde que les chiffres (copier-coller avec espaces, tabulations, points…)
+        function sanitizeStarCode() {
+            const el = document.getElementById('star_code');
+            if (!el) return;
+            const clean = el.value.replace(/[^0-9]/g, '');
+            if (clean === el.value) return;
+            el.value = clean;
+            if (!clean) {
+                document.getElementById('print-zone').innerHTML = '';
+                document.getElementById('emptyPreview').style.display = 'flex';
+                document.getElementById('previewCountBadge').innerText = '0 étiquette';
+                document.getElementById('btnPrint').style.display = 'none';
+                document.getElementById('printHint').style.display = 'none';
+                labelsToPrint = [];
+            }
         }
 
         function checkAutoGenerate() {
@@ -1465,7 +1489,7 @@ NE PAS TOUCHER"></textarea></div>
                     `;
                     addLabel(dataUrl, html, zplBadge(base, name || id), 0, true);
                 } else if (currentTab === 'etoile') {
-                    const sc = document.getElementById('star_code').value;
+                    const sc = document.getElementById('star_code').value.replace(/[^0-9]/g, '');
                     let dm = dmPngData(sc, 6, 2);
                     let html = `
                         <div class="barcode-box"><img src="${dm.dataUrl}" alt=""${imgSizeStyle(dm.dots)}></div>
