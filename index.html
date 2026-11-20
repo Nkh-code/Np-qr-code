@@ -752,11 +752,27 @@
         .res-text { font-weight: 800; font-size: 8pt; margin-top: 3px; letter-spacing: 0.5px; font-family: var(--font-mono); color: #000 !important; }
 
         /* Étiquette texte libre : lignes déjà découpées par freeTextLayout() */
-        .label-img {
-            display: block;
+        .free-label {
             width: 100%;
             height: 100%;
-            image-rendering: pixelated;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: #000 !important;
+            font-family: -apple-system, Arial, sans-serif;
+            font-weight: 900;
+            -webkit-text-stroke: 0.35px #000;
+            line-height: 1.08;
+            padding: 0;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        .free-label div {
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
         }
         .barcode-box img { max-height: 0.55in; max-width: 92%; image-rendering: pixelated; }
 
@@ -1252,61 +1268,34 @@ NE PAS TOUCHER"></textarea></div>
             return largest;
         }
 
-        /* ---------- Rendu de l'étiquette : un seul bitmap pour tout ---------- */
-        function renderLabel(layout) {
-            const cv = document.createElement('canvas');
-            cv.width = PRINTER.labelW;
-            cv.height = PRINTER.labelH;
-            const ctx = cv.getContext('2d');
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, cv.width, cv.height);
-
-            const px = layout.fontSize;                       // 1 px de canvas = 1 dot imprimante
-            ctx.font = '900 ' + px.toFixed(2) + 'px -apple-system, Arial, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#000000';
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = Math.max(0.4, px * 0.045);        // épaissit encore les traits (gras marqué)
-            ctx.lineJoin = 'round';
-
-            const totalH = layout.lines.length * layout.lineH;
-            const startY = Math.round((PRINTER.labelH - totalH) / 2);
-            layout.lines.forEach((line, i) => {
-                const y = startY + i * layout.lineH + layout.lineH / 2;
-                ctx.fillText(line, PRINTER.labelW / 2, y);
-                ctx.strokeText(line, PRINTER.labelW / 2, y);
-            });
-            return cv;
+        // Aperçu : texte HTML (pas d'image)
+        function freeTextHtml(layout) {
+            const pt = (layout.fontSize * 72 / PRINTER.dpi).toFixed(2);
+            const lh = (layout.lineH / layout.fontSize).toFixed(3);
+            return `<div class="free-label" style="font-size:${pt}pt; line-height:${lh};">`
+                + layout.lines.map(l => `<div>${escapeHtml(l)}</div>`).join('')
+                + `</div>`;
         }
 
-        function labelToHtml(cv) {
-            const url = cv.toDataURL('image/png');
-            return `<img src="${url}" alt="" class="label-img">`;
-        }
-
-        // L'étiquette part à la Zebra comme image 1 bit (^GFA, bandes de 51 lignes)
-        function zplTexte(cv) {
-            const ctx = cv.getContext('2d');
-            const { data } = ctx.getImageData(0, 0, cv.width, cv.height);
-            const W = cv.width, H = cv.height, bpr = W / 8, strip = 51;
+        // ZPL texte natif (police de l'imprimante). Centrage vertical sur la vraie
+        // hauteur du bloc, horizontal symétrique : champ ^FB de 302 dots et 3 passes
+        // décalées de 0/1/2 dots pour le gras (l'union reste centrée).
+        function zplTexte(layout) {
+            const h = layout.fontSize;
+            const S = layout.lineH;
+            const L = layout.lines.length;
+            const totalH = (L - 1) * S + h;
+            const startY = Math.max(0, Math.round((PRINTER.labelH - totalH) / 2));
+            const w = Math.round(h * 0.85);
+            const fw = PRINTER.labelW - 2;
             let s = zplHeader();
-            for (let y0 = 0; y0 < H; y0 += strip) {
-                const rows = Math.min(strip, H - y0);
-                const bytes = bpr * rows;
-                let hex = '';
-                for (let y = y0; y < y0 + rows; y++) {
-                    for (let bx = 0; bx < bpr; bx++) {
-                        let byte = 0;
-                        for (let b = 0; b < 8; b++) {
-                            const idx = ((y * W) + bx * 8 + b) * 4;
-                            byte = (byte << 1) | (data[idx] < 140 ? 1 : 0);
-                        }
-                        hex += byte.toString(16).padStart(2, '0').toUpperCase();
-                    }
+            layout.lines.forEach((line, i) => {
+                const y = startY + Math.round(i * S);
+                const t = zplText(line, true);
+                for (let pass = 0; pass < 3; pass++) {
+                    s += '^FO' + pass + ',' + y + '^A0N,' + h + ',' + w + '^FB' + fw + ',1,0,C,0^FD' + t + '^FS\n';
                 }
-                s += '^FO0,' + y0 + '^GFA,' + bytes + ',' + bytes + ',' + bpr + ',' + hex + '^FS\n';
-            }
+            });
             return s + '^XZ\n';
         }
 
@@ -1506,9 +1495,8 @@ NE PAS TOUCHER"></textarea></div>
                         let qty = parseInt(qtyEl ? qtyEl.value : '1', 10);
                         if (!qty || qty < 1) qty = 1;
                         if (qty > 50) qty = 50;
-                        const cv = renderLabel(layout);
-                        const html = labelToHtml(cv);
-                        const zpl = zplTexte(cv);
+                        const html = freeTextHtml(layout);
+                        const zpl = zplTexte(layout);
                         for (let i = 0; i < qty; i++) addLabel('', html, zpl, 0, true);
                     }
                 }
@@ -1770,7 +1758,7 @@ NE PAS TOUCHER"></textarea></div>
         justify-content: space-between;
         align-items: center;
         width: 1.5in; height: 1in;
-        padding: 0;
+        padding: 4px 6px;
         overflow: hidden;
         page-break-after: always;
         box-sizing: border-box;
@@ -1809,12 +1797,20 @@ NE PAS TOUCHER"></textarea></div>
         text-align: center;
         word-break: break-all;
     }
-    .label .label-img {
-        display: block;
+    .free-label {
         width: 100%; height: 100%;
-        max-width: none; max-height: none;   /* neutralise les limites des autres types d'étiquettes */
-        image-rendering: pixelated;
+        display: flex; flex-direction: column;
+        justify-content: center; align-items: center;
+        text-align: center;
+        color: #000;
+        font-family: Arial, Helvetica, sans-serif;
+        font-weight: 900;
+        -webkit-text-stroke: 0.4px #000;
+        line-height: 1.08;
+        box-sizing: border-box;
+        overflow: hidden;
     }
+    .free-label div { width: 100%; white-space: nowrap; overflow: hidden; }
     .label [style*="border-bottom"] {
         font-size: 14pt;
         font-weight: bold;
