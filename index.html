@@ -456,7 +456,8 @@
             color: var(--text-muted);
         }
 
-        .field input {
+        .field input,
+        .field textarea {
             padding: 12px 14px;
             background: var(--input-bg);
             border: 1.5px solid var(--input-border);
@@ -469,7 +470,15 @@
             font-family: var(--font-mono), sans-serif;
         }
 
-        .field input:focus {
+        .field textarea {
+            resize: vertical;
+            min-height: 90px;
+            line-height: 1.35;
+            text-transform: uppercase;
+        }
+
+        .field input:focus,
+        .field textarea:focus {
             outline: none;
             border-color: var(--input-focus);
             background: var(--card);
@@ -741,6 +750,29 @@
         .txt-row2 { font-size: 11pt; font-weight: bold; color: #000 !important; margin-bottom: 3px; font-family: Arial, sans-serif; }
         .barcode-box { width: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; }
         .res-text { font-weight: 800; font-size: 8pt; margin-top: 3px; letter-spacing: 0.5px; font-family: var(--font-mono); color: #000 !important; }
+
+        /* Étiquette texte libre : lignes déjà découpées par freeTextLayout() */
+        .free-label {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: #000 !important;
+            font-family: -apple-system, Arial, sans-serif;
+            font-weight: 800;
+            line-height: 1.12;
+            padding: 0 2px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        .free-label div {
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+        }
         .barcode-box img { max-height: 0.55in; max-width: 92%; image-rendering: pixelated; }
 
         /* Toast notification */
@@ -864,6 +896,10 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
                 <span>Étoile</span>
             </div>
+            <div id="btn-texte" class="nav-item" onclick="switchTab('texte', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 7V5h16v2"></path><path d="M12 5v14"></path><path d="M9 19h6"></path></svg>
+                <span>Texte</span>
+            </div>
         </div>
     </nav>
 
@@ -974,7 +1010,10 @@
                 mass: `<div class="grid-inputs"><div class="field"><label>De l'allée</label><input type="number" id="a_start" placeholder="ex: 1"></div><div class="field"><label>À l'allée</label><input type="number" id="a_end" placeholder="ex: 10"></div></div>`
             },
             badge: `<div class="field" style="margin-bottom:14px;"><label>Nom de l'Opérateur</label><input type="text" id="b_name" placeholder="ex: DUPONT Jean"></div><div class="field"><label>N° Badge (4 chiffres)</label><input type="number" id="b_id" maxlength="4" placeholder="ex: 1234"></div>`,
-            etoile: `<div class="field"><label>Numéro ou code texte (Points)</label><input type="text" id="star_code" placeholder="ex: 5522051"></div>`
+            etoile: `<div class="field"><label>Numéro ou code texte (Points)</label><input type="text" id="star_code" placeholder="ex: 5522051"></div>`,
+            texte: `<div class="field"><label>Texte à imprimer</label><textarea id="free_text" rows="4" maxlength="200" placeholder="ex: RESERVE
+NE PAS TOUCHER"></textarea></div>
+                    <div class="field" style="margin-top:14px;"><label>Nombre de copies</label><input type="number" id="free_qty" value="1" min="1" max="50" placeholder="1"></div>`
         };
 
         function escapeHtml(s) {
@@ -1151,6 +1190,92 @@
                 + '^XZ\n';
         }
 
+        /* =====================================================================
+           TEXTE LIBRE (onglet « Texte ») : même étiquette 38 × 25 mm
+           Une seule mise en page, réutilisée par l'aperçu HTML et par le ZPL.
+           ===================================================================== */
+        const FREE_TEXT_SIZES = [60, 52, 44, 36, 30, 26, 22, 18, 15];  // hauteurs en dots (203 dpi)
+        const LABEL_PAD = 8;                                            // marge interne : 1 mm
+
+        // Découpe une ligne en respectant les mots
+        function wrapWords(line, maxChars) {
+            const words = line.split(' ').filter(w => w.length);
+            if (!words.length) return [''];
+            const out = [];
+            let cur = '';
+            words.forEach(w0 => {
+                let word = w0;
+                while (word.length > maxChars) {          // mot plus long que la ligne : on le coupe
+                    if (cur) { out.push(cur); cur = ''; }
+                    out.push(word.slice(0, maxChars));
+                    word = word.slice(maxChars);
+                }
+                if (!cur) cur = word;
+                else if ((cur + ' ' + word).length <= maxChars) cur += ' ' + word;
+                else { out.push(cur); cur = word; }
+            });
+            if (cur) out.push(cur);
+            return out;
+        }
+
+        // Choisit la plus grande taille de police où tout le texte tient dans l'étiquette
+        function freeTextLayout(text) {
+            const rawLines = String(text == null ? '' : text)
+                .replace(/\r/g, '').split('\n')
+                .map(l => l.replace(/\s+/g, ' ').trim())
+                .filter(l => l !== '');
+            if (!rawLines.length) return null;
+
+            const usableW = PRINTER.labelW - 2 * LABEL_PAD;   // 288 dots
+            const usableH = PRINTER.labelH - 2 * LABEL_PAD;   // 187 dots
+
+            const trySize = (h) => {
+                const maxChars = Math.max(3, Math.floor(usableW / (0.65 * h)));  // pas moyen estimé d'une MAJUSCULE : 0,65 × hauteur
+                const lines = [];
+                rawLines.forEach(l => wrapWords(l, maxChars).forEach(x => lines.push(x)));
+                return { fontSize: h, lines: lines, lineH: Math.round(h * 1.15), maxChars: maxChars };
+            };
+
+            // 1) priorité : la plus grande taille où chaque ligne saisie reste entière
+            // 2) si ça donne un texte minuscule (< 3 mm), on accepte une seule coupure
+            const fits = [];
+            FREE_TEXT_SIZES.forEach(h => {
+                const lay = trySize(h);
+                if (lay.lines.length * lay.lineH <= usableH) fits.push(lay);   // ordre : grande → petite
+            });
+            if (!fits.length) return trySize(FREE_TEXT_SIZES[FREE_TEXT_SIZES.length - 1]);
+
+            const noSplit = fits.filter(l => l.lines.length === rawLines.length);
+            if (noSplit.length && noSplit[0].fontSize >= 24) return noSplit[0];
+
+            const oneSplit = fits.filter(l => l.lines.length <= rawLines.length + 1);
+            if (oneSplit.length) return oneSplit[0];
+
+            return noSplit[0] || fits[0];
+        }
+
+        // Aperçu écran / navigateur : 1 dot = 1/203 in
+        function freeTextHtml(layout) {
+            const pt = (layout.fontSize * 72 / PRINTER.dpi).toFixed(2);
+            const lh = (layout.lineH / layout.fontSize).toFixed(3);
+            return `<div class="free-label" style="font-size:${pt}pt; line-height:${lh};">`
+                + layout.lines.map(l => `<div>${escapeHtml(l)}</div>`).join('')
+                + `</div>`;
+        }
+
+        // ZPL : une ligne = un champ ^FB, empilées et centrées verticalement
+        function zplTexte(layout) {
+            const totalH = layout.lines.length * layout.lineH;
+            const startY = Math.max(0, Math.round((PRINTER.labelH - totalH) / 2));
+            let s = zplHeader();
+            layout.lines.forEach((line, i) => {
+                const y = startY + i * layout.lineH;
+                s += '^FO0,' + y + '^A0N,' + layout.fontSize + ',' + Math.round(layout.fontSize * 0.85)
+                   + '^FB' + PRINTER.labelW + ',1,0,C,0^FD' + zplText(line, true) + '^FS\n';
+            });
+            return s + '^XZ\n';
+        }
+
         function setupAreaGrid() {
             const container = document.getElementById('area-grid-btns');
             container.innerHTML = '';
@@ -1200,7 +1325,7 @@
             document.getElementById('mode-mass').className = mode === 'mass' ? 'mode-btn active' : 'mode-btn';
             document.getElementById('form-container').innerHTML = (currentTab === 'emplacement' || currentTab === 'allee') ? forms[currentTab][mode] : forms[currentTab];
             
-            document.querySelectorAll('#form-container input').forEach(input => {
+            document.querySelectorAll('#form-container input, #form-container textarea').forEach(input => {
                 input.addEventListener('keyup', checkAutoGenerate);
                 input.addEventListener('change', checkAutoGenerate);
                 input.addEventListener('input', checkAutoGenerate);
@@ -1215,6 +1340,21 @@
         }
 
         function checkAutoGenerate() {
+            // Onglet Texte : un seul champ libre, aucun code à calculer
+            if (currentTab === 'texte') {
+                const ta = document.getElementById('free_text');
+                if (ta && ta.value.trim() !== '') {
+                    generate();
+                } else {
+                    document.getElementById('print-zone').innerHTML = '';
+                    document.getElementById('emptyPreview').style.display = 'flex';
+                    document.getElementById('previewCountBadge').innerText = '0 étiquette';
+                    document.getElementById('btnPrint').style.display = 'none';
+                    document.getElementById('printHint').style.display = 'none';
+                    labelsToPrint = [];
+                }
+                return;
+            }
             const inputs = Array.from(document.querySelectorAll('#form-container input'));
             const allFilled = inputs.length > 0 && inputs.every(i => i.value.trim() !== "");
             const areaOk = (currentTab === 'emplacement' || currentTab === 'allee') ? selectedArea !== null : true;
@@ -1325,6 +1465,17 @@
                         <div class="res-text">${escapeHtml(sc)}</div>
                     `;
                     addLabel(dm.dataUrl, html, zplEtoile(sc, dm.rows, dm.cols), dm.dots, true);
+                } else if (currentTab === 'texte') {
+                    const layout = freeTextLayout(document.getElementById('free_text').value);
+                    if (layout) {
+                        const qtyEl = document.getElementById('free_qty');
+                        let qty = parseInt(qtyEl ? qtyEl.value : '1', 10);
+                        if (!qty || qty < 1) qty = 1;
+                        if (qty > 50) qty = 50;
+                        const html = freeTextHtml(layout);
+                        const zpl = zplTexte(layout);
+                        for (let i = 0; i < qty; i++) addLabel('', html, zpl, 0, true);
+                    }
                 }
 
                 // Mise à jour de l'affichage
@@ -1623,6 +1774,19 @@
         text-align: center;
         word-break: break-all;
     }
+    .free-label {
+        width: 100%; height: 100%;
+        display: flex; flex-direction: column;
+        justify-content: center; align-items: center;
+        text-align: center;
+        color: #000;
+        font-family: Arial, Helvetica, sans-serif;
+        font-weight: 800;
+        line-height: 1.12;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+    .free-label div { width: 100%; white-space: nowrap; overflow: hidden; }
     .label [style*="border-bottom"] {
         font-size: 14pt;
         font-weight: bold;
