@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>Npqrcode — Générateur d'étiquettes logistiques</title>
+    <title>Étiquettes Étoiles — Zebra 38 × 25 mm</title>
     <link rel="icon" href="favicon.ico" sizes="32x32" />
     <link rel="icon" href="najm-favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="favicon-16x16.png" sizes="16x16" type="image/png" />
@@ -850,8 +850,8 @@
                     </svg>
                 </div>
                 <div class="brand-title">
-                    <h1>Npqrcode</h1>
-                    <span class="brand-subtitle">Zebra LP 2824 Plus <span class="brand-tag">38 × 25 mm</span></span>
+                    <h1>Étoiles</h1>
+                    <span class="brand-subtitle">Zebra LP 2824 Plus <span class="brand-tag">38 × 25 mm</span> <span class="brand-tag">v15</span></span>
                 </div>
             </div>
 
@@ -878,28 +878,12 @@
         </div>
     </header>
 
-    <!-- Navigation Tabs Bar -->
-    <nav class="tabs-bar">
+    <!-- Navigation Tabs Bar — version dédiée : onglet Étoile uniquement -->
+    <nav class="tabs-bar" style="display:none;">
         <div class="tabs-container">
-            <div id="btn-emp" class="nav-item active" onclick="switchTab('emplacement', this)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg>
-                <span>Emplacement</span>
-            </div>
-            <div class="nav-item" onclick="switchTab('allee', this)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="17 11 12 6 7 11"></polyline><polyline points="17 18 12 13 7 18"></polyline></svg>
-                <span>Allée</span>
-            </div>
-            <div class="nav-item" onclick="switchTab('badge', this)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                <span>Badge</span>
-            </div>
-            <div id="btn-etoile" class="nav-item" onclick="switchTab('etoile', this)">
+            <div id="btn-etoile" class="nav-item active" onclick="switchTab('etoile', this)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
                 <span>Étoile</span>
-            </div>
-            <div id="btn-texte" class="nav-item" onclick="switchTab('texte', this)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 7V5h16v2"></path><path d="M12 5v14"></path><path d="M9 19h6"></path></svg>
-                <span>Texte</span>
             </div>
         </div>
     </nav>
@@ -909,7 +893,7 @@
         <!-- Left: Configuration Form -->
         <section class="config-card">
             <div class="card-header-row">
-                <h2 id="tab-title">Emplacement</h2>
+                <h2 id="tab-title">Étoile</h2>
                 <!-- Submode switcher (Unique / Masse) -->
                 <div class="mode-selector" id="mode-ui">
                     <button class="mode-btn active" id="mode-single" onclick="setSubMode('single')">
@@ -1888,7 +1872,7 @@ NE PAS TOUCHER"></textarea></div>
 
         window.onload = () => {
             initTheme();
-            switchTab('emplacement', document.getElementById('btn-emp'));
+            switchTab('etoile', document.getElementById('btn-etoile'));
             initWebUsb();
             bpReady().then(updatePrinterStatus);
         };
